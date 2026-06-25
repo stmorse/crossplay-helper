@@ -1,0 +1,37 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>gen</title></head>
+<body><pre id="out">running…</pre>
+<script type="module">
+import { TemplateSet } from "../js/glyphs.js";
+import { recognize } from "../js/recognizer.js";
+import * as C from "../js/calibration.js";
+const GT = [
+  ". . . . . . . . A R C H I V E",". . . . . . . . Q . . . . . .",
+  ". . . . . . . . U . A P E . .",". . . . . . S W A G G E D . .",
+  ". . . . M E H . . . . . . . .",". . . B U S . . . . . . . . .",
+  ". C O A T . . . . . . . . . .",". . . D E V I L E D . . . . .",
+  ". H . . . . . A . . . . . J .",". E . . . . . R . . . . . I .",
+  ". R . . . . . Y E W S . O N .","T O R S O . . N . . I N N . .",
+  ". N . . F L A X . . P O O F .",". S . . T A G . B L E D . U .",
+  ". . . . . . . . . . . I . G ."
+].map(r=>r.split(" "));
+const DIG=[[0,8,"1"],[2,8,"2"],[0,10,"3"],[3,9,"4"],[3,7,"5"],[0,13,"6"],[12,7,"8"],[3,10,"0"]];
+const t=new TemplateSet(); t.buildSeed();
+const img=new Image();
+img.onload=()=>{
+  const geo=recognize(img,t).geo;
+  const cv=document.createElement("canvas");cv.width=img.naturalWidth;cv.height=img.naturalHeight;
+  const ctx=cv.getContext("2d");ctx.drawImage(img,0,0);
+  const px=ctx.getImageData(0,0,cv.width,cv.height).data;const W=cv.width;
+  const frac=(r,f)=>({x:r.x+r.w*f.x0,y:r.y+r.h*f.y0,w:r.w*(f.x1-f.x0),h:r.h*(f.y1-f.y0)});
+  const inkMap=(rx,ry,rw,rh)=>{const w2=Math.round(rw),h2=Math.round(rh);const o=new Float32Array(w2*h2);const x0=Math.round(rx),y0=Math.round(ry);for(let y=0;y<h2;y++)for(let x=0;x<w2;x++){const i=((y0+y)*W+(x0+x))*4;o[y*w2+x]=Math.min(1,Math.max(0,(px[i]-C.INK_LO)/(C.INK_HI-C.INK_LO)));}return{data:o,w:w2,h:h2};};
+  const cellRect=(r,c)=>({x:geo.left+c*geo.cell,y:geo.top+r*geo.cell,w:geo.cell,h:geo.cell});
+  for(let r=0;r<15;r++)for(let c=0;c<15;c++){const ch=GT[r][c];if(ch===".")continue;const g=frac(cellRect(r,c),C.LETTER_REGION);t.train("letter",ch,inkMap(g.x,g.y,g.w,g.h));}
+  for(const [r,c,d] of DIG){const g=frac(cellRect(r,c),C.VALUE_REGION);t.train("digit",d,inkMap(g.x,g.y,g.w,g.h));}
+  // round to 4 decimals to keep file small
+  const round=o=>{const r={};for(const[k,v] of Object.entries(o))r[k]=v.map(x=>Math.round(x*1e4)/1e4);return r;};
+  document.getElementById("out").textContent=JSON.stringify({letters:round(t.trained.letters),digits:round(t.trained.digits)});
+  document.title="DONE";
+};
+img.onerror=()=>{document.getElementById("out").textContent="FAIL";};
+img.src="../example.png";
+</script></body></html>
