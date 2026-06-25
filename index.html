@@ -49,8 +49,13 @@
     <!-- 3. Best plays -->
     <section class="card hidden" id="plays-card">
       <h2>Best plays</h2>
+      <div class="seg" id="rank-toggle">
+        <button class="seg-btn active" data-rank="equity">Best overall</button>
+        <button class="seg-btn" data-rank="score">Most points</button>
+      </div>
       <p class="status" id="plays-status"></p>
       <ol class="plays" id="plays"></ol>
+      <p class="muted">“Best overall” = points + value of the tiles you keep (rack leave).</p>
     </section>
 
     <!-- 4. Debug preview -->

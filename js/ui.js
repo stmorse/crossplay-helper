@@ -159,12 +159,14 @@ export function renderMoves(moves, el, onSelect) {
   moves.forEach((m, i) => {
     const li = document.createElement("li");
     const blanks = m.tiles.filter((t) => t.blank).length;
+    const keep = m.leave ? `keeps <span class="keep">${m.leave}</span>` : "keeps nothing";
     li.innerHTML =
       `<span class="rank">${i + 1}</span>` +
       `<span class="word">${m.word}</span>` +
-      `<span class="meta">${squareLabel(m)} · ${m.tiles.length} tile${m.tiles.length > 1 ? "s" : ""}` +
+      `<span class="meta">${squareLabel(m)} · ${keep}` +
       (blanks ? ` · <span class="blanktag">${blanks} blank</span>` : "") + `</span>` +
-      `<span class="score">${m.score}</span>`;
+      `<span class="scorebox"><span class="score">${m.score}<small> pts</small></span>` +
+      (m.equity != null ? `<span class="eq">eq ${m.equity}</span>` : "") + `</span>`;
     li.addEventListener("click", () => {
       [...el.children].forEach((c) => c.classList.remove("selected"));
       li.classList.add("selected");

@@ -43,85 +43,70 @@ function hue(r, g, b) {
 
 // ---- calibration ---------------------------------------------------------
 
-// Find the board's square bounding box by locating the tallest horizontal band
-// of "structured" (colored/tile) pixels, separated from header & tray by gaps.
+// Group a boolean-ish profile into bands of "on" runs, merging gaps shorter than
+// `maxGap` so that sparse boards (rows/cols with no premium label) stay intact.
+function bandsFromProfile(frac, n, thr, maxGap) {
+  const bands = [];
+  let start = -1, gap = 0;
+  for (let i = 0; i < n; i++) {
+    if (frac[i] > thr) { if (start < 0) start = i; gap = 0; }
+    else if (start >= 0) {
+      if (++gap > maxGap) { bands.push({ start, end: i - gap, len: i - gap - start }); start = -1; }
+    }
+  }
+  if (start >= 0) bands.push({ start, end: n - 1, len: n - 1 - start });
+  return bands;
+}
+
+// Find the board's square bounding box. The board is the tallest run of rows
+// containing "colored" pixels (tiles or premium labels). Colored is measured by
+// saturation, NOT by an absolute white threshold, so it's robust to the page
+// being pure white or slightly tinted, and to the board's size/position varying
+// between screenshots. Small internal gaps (empty rows/cols) are bridged.
 export function calibrate({ data, w, h }) {
   const px = data.data;
   const step = 2;
+  const colored = (i) => isTileBlue(px[i], px[i + 1], px[i + 2]) || isSaturated(px[i], px[i + 1], px[i + 2]);
+
   const rowFrac = new Float32Array(h);
   for (let y = 0; y < h; y += step) {
     let hits = 0, n = 0;
-    for (let x = 0; x < w; x += step) {
-      const i = (y * w + x) * 4, r = px[i], g = px[i + 1], b = px[i + 2];
-      n++;
-      if (isTileBlue(r, g, b) || isSaturated(r, g, b)) hits++;
-    }
+    for (let x = 0; x < w; x += step) { n++; if (colored((y * w + x) * 4)) hits++; }
     rowFrac[y] = hits / n;
   }
 
-  // contiguous bands above a low threshold
-  const thr = 0.03;
-  const bands = [];
-  let start = -1;
-  for (let y = 0; y < h; y += step) {
-    const on = rowFrac[y] > thr;
-    if (on && start < 0) start = y;
-    if ((!on || y + step >= h) && start >= 0) {
-      const end = on ? y : y - step;
-      if (end - start > 8) bands.push({ top: start, bottom: end, height: end - start });
-      start = -1;
-    }
-  }
-  if (!bands.length) throw new Error("Could not locate the board in this image.");
+  // Bridge gaps up to ~1 empty cell-row. The header/tray are separated from the
+  // board by larger gaps, so they stay distinct; the tallest band is the board.
+  const maxGap = Math.round(h * 0.045);     // ≈ 115px on a 2556-tall screenshot
+  const rowBands = bandsFromProfile(rowFrac, h, 0.02, maxGap);
+  if (!rowBands.length) throw new Error("Could not locate the board in this image.");
+  rowBands.sort((a, b) => b.len - a.len);
+  const top0 = rowBands[0].start, bot0 = rowBands[0].end;
 
-  // board = tallest band
-  bands.sort((a, b) => b.height - a.height);
-  const board = bands[0];
-
-  // horizontal extent within the board band
-  let left = w, right = 0;
-  for (let y = board.top; y <= board.bottom; y += step) {
-    for (let x = 0; x < w; x += step) {
-      const i = (y * w + x) * 4, r = px[i], g = px[i + 1], b = px[i + 2];
-      if (isTileBlue(r, g, b) || isSaturated(r, g, b)) {
-        if (x < left) left = x;
-        if (x > right) right = x;
-      }
-    }
-  }
-
-  // The structured band is inset from the true board edges (top-row labels/tiles
-  // don't touch the cell borders). Recover the TRUE horizontal edges from the
-  // off-white board cells vs the pure-white page, sampled on mid-board rows —
-  // empty cells are off-white too, so this reaches the real left/right edges.
-  const isPage = (r, g, b) => r >= C.PAGE_MIN && g >= C.PAGE_MIN && b >= C.PAGE_MIN;
-  let tLeft = w, tRight = 0;
-  for (let k = 1; k <= 9; k++) {
-    const y = Math.round(board.top + ((board.bottom - board.top) * k) / 10);
-    for (let x = 0; x < w; x += step) {
-      const i = (y * w + x) * 4;
-      if (!isPage(px[i], px[i + 1], px[i + 2])) {
-        if (x < tLeft) tLeft = x;
-        if (x > tRight) tRight = x;
-      }
-    }
-  }
-  if (tRight <= tLeft) { tLeft = left; tRight = right; }   // fallback
-
-  // Board is square. Width is the trustworthy dimension (true edges); derive the
-  // true top by centering the square around the (inset) structured content band.
-  const size = tRight - tLeft;
+  // The vertical extent is the reliable axis for SIZE: tiles/premium labels reach
+  // the true top & bottom rows, and the header/tray are far enough never to merge.
+  const size = bot0 - top0;
   const cell = size / C.GRID;
-  const contentH = board.bottom - board.top;
-  const margin = (size - contentH) / 2;
-  const top = Math.round(board.top - margin);
+
+  // For horizontal POSITION, find the board's left/right edges from columns with
+  // a meaningful amount of colored content (a 0.06 threshold rejects stray edge
+  // pixels), then take the MIDPOINT as the center — robust to a board whose tiles
+  // sit mostly on one side (a centroid would be pulled off-center).
+  const colFrac = new Float32Array(w);
+  for (let x = 0; x < w; x += step) {
+    let hits = 0, n = 0;
+    for (let y = top0; y <= bot0; y += step) { n++; if (colored((y * w + x) * 4)) hits++; }
+    colFrac[x] = hits / n;
+  }
+  let left0 = -1, right0 = -1;
+  for (let x = 0; x < w; x += step) if (colFrac[x] > 0.06) { if (left0 < 0) left0 = x; right0 = x; }
+  const cx = left0 < 0 ? w / 2 : (left0 + right0) / 2;
 
   return {
-    left: Math.round(tLeft), top, size: Math.round(size), cell,
-    grid: C.GRID,
-    bands,                                  // kept for tray detection
-    rowFrac, step,
-    img: { w, h },
+    left: Math.round(cx - size / 2), top: top0,
+    size, cell, grid: C.GRID,
+    boardBottom: bot0,
+    rowFrac, step, img: { w, h },
   };
 }
 
@@ -199,19 +184,71 @@ function nearestPremium(deg) {
 
 // ---- OCR -----------------------------------------------------------------
 
-function ocrLetter(px, w, rect, templates) {
+// Isolate the letter glyph as the largest, roughly-central connected ink blob in
+// a generous cell window. This drops the value superscript (a separate, smaller
+// blob), gridline fragments at the edges, and any neighbor-tile bleed, and makes
+// recognition tolerant to a few px of calibration drift. Used by OCR + training,
+// so the same extraction is baked into the templates. Exported for the generator.
+export function extractLetterInk(px, w, rect) {
   const region = frac(rect, C.LETTER_REGION);
   const ink = inkMap(px, w, region.x, region.y, region.w, region.h);
-  const vec = normalizeInk(ink);
+  return largestBlob(ink);
+}
+
+export function extractValueInk(px, w, rect) {
+  const region = frac(rect, C.VALUE_REGION);
+  return inkMap(px, w, region.x, region.y, region.w, region.h);
+}
+
+// Keep only the largest connected component of ink (8-connectivity), preferring
+// a centrally-located blob over a larger one hugging the window edge.
+function largestBlob(ink, thr = 0.5) {
+  const { data, w: W, h: H } = ink;
+  const labels = new Int32Array(W * H);
+  const stack = [];
+  let cur = 0;
+  const size = [0], cx = [0], cy = [0];
+  for (let i = 0; i < W * H; i++) {
+    if (data[i] <= thr || labels[i]) continue;
+    cur++; labels[i] = cur; stack.push(i);
+    let s = 0, sx = 0, sy = 0;
+    while (stack.length) {
+      const p = stack.pop(); s++; const py = (p / W) | 0, pxc = p % W; sx += pxc; sy += py;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        if (!dx && !dy) continue;
+        const nx = pxc + dx, ny = py + dy;
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+        const np = ny * W + nx;
+        if (data[np] > thr && !labels[np]) { labels[np] = cur; stack.push(np); }
+      }
+    }
+    size[cur] = s; cx[cur] = sx / s; cy[cur] = sy / s;
+  }
+  if (!cur) return ink;
+  let best = 0, bestScore = -1;
+  for (let l = 1; l <= cur; l++) {
+    if (size[l] < 8) continue;
+    const nx = cx[l] / W, ny = cy[l] / H;
+    const central = (nx > 0.15 && nx < 0.85 && ny > 0.12 && ny < 0.93) ? 1 : 0.35;
+    const score = size[l] * central;
+    if (score > bestScore) { bestScore = score; best = l; }
+  }
+  if (!best) return ink;
+  const out = new Float32Array(W * H);
+  for (let i = 0; i < W * H; i++) if (labels[i] === best) out[i] = data[i];
+  return { data: out, w: W, h: H };
+}
+
+function ocrLetter(px, w, rect, templates) {
+  const vec = normalizeInk(extractLetterInk(px, w, rect));
   if (!vec) return { letter: "?", score: 0, margin: 0 };
   const m = templates.match(vec, "letter");
   return { letter: m.ch, score: m.score, margin: m.margin };
 }
 
-// OCR the value subscript: segment into digit runs, match each.
+// OCR the value superscript: segment into digit runs, match each.
 function ocrValue(px, w, rect, templates) {
-  const region = frac(rect, C.VALUE_REGION);
-  const ink = inkMap(px, w, region.x, region.y, region.w, region.h);
+  const ink = extractValueInk(px, w, rect);
   const { data, w: W, h: H } = ink;
   // column ink profile
   const col = new Float32Array(W);
@@ -350,12 +387,9 @@ export function trainFromState(image, state, templates) {
   let trained = 0;
   const learn = (t) => {
     if (!t.rect || !t.letter || t.letter === "?") return;
-    const lr = frac(t.rect, C.LETTER_REGION);
-    templates.train("letter", t.letter, inkMap(px, w, lr.x, lr.y, lr.w, lr.h));
-    if (t.value != null && t.value >= 0 && t.value <= 9) {
-      const vr = frac(t.rect, C.VALUE_REGION);
-      templates.train("digit", String(t.value), inkMap(px, w, vr.x, vr.y, vr.w, vr.h));
-    }
+    templates.train("letter", t.letter, extractLetterInk(px, w, t.rect));
+    if (t.value != null && t.value >= 0 && t.value <= 9)
+      templates.train("digit", String(t.value), extractValueInk(px, w, t.rect));
     trained++;
   };
   for (const row of state.board) for (const cell of row) if (cell.type === "tile") learn(cell);

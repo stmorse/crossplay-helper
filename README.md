@@ -9,12 +9,16 @@ See [`NOTES.md`](NOTES.md) for the full design rationale and roadmap.
 ## Status
 
 - ✅ **Board recognizer** — screenshot → board + tray state, runs entirely in-browser:
-  - auto-calibrates the board geometry (resolution-independent)
+  - auto-calibrates board geometry robustly across screenshots — board size/position
+    and page tint vary, so it locates the board by a gap-merged band of *colored*
+    (saturation-based) pixels and sizes the square from the reliable vertical extent
   - classifies every cell as tile / empty / premium (`3L`/`2L`/`3W`/`2W`, by color)
-  - OCRs each tile's letter **and** point value via template matching against a glyph
-    set baked from a real screenshot (Crossplay uses a fixed digital font)
+  - OCRs each tile's letter (largest connected ink blob → tolerant to a few px of
+    drift) **and** point value, via template matching against a glyph set baked from a
+    real screenshot (Crossplay uses a fixed digital font); detects blanks (value 0)
   - detects the tray tiles
-  - on `example.png`: **100% letters / values / tray** out of the box
+  - verified on four different boards (`examples/`): full, mid-game, and near-empty —
+    all letters / values / trays correct, including blanks
 - ✅ **Correction UI** — tappable board + tray; low-confidence cells are highlighted so
   you can fix any misread. "Improve accuracy" learns the font from your corrections
   (stored in `localStorage`) for even better future reads.
@@ -25,11 +29,16 @@ See [`NOTES.md`](NOTES.md) for the full design rationale and roadmap.
   - **scoring from the per-tile point values read off the screenshot** (Crossplay's
     values are non-standard, so no hardcoded table) — main word + cross words + bingo
   - finds every legal play on a full board in **single-digit milliseconds**
-  - "Find best plays" lists the top plays by score; tapping one highlights it on the
-    board. Placeholder dictionary is ENABLE (`assets/words.txt`); swap for the real
-    Crossplay list later.
-- ⬜ **Move quality** (next) — rack-leave equity, then blocking/defense heuristics, then
-  optional Monte-Carlo simulation. Currently ranks by raw score only.
+  - "Find best plays" lists the top plays; tapping one highlights it on the board.
+    Placeholder dictionary is ENABLE (`assets/words.txt`); swap for the real Crossplay
+    list later.
+- ✅ **Rack-leave equity** — ranks plays by *equity* = score + the value of the tiles you
+  keep, not just raw points (a transparent heuristic placeholder in `js/engine/leave.js`:
+  blank/S bonuses, vowel-consonant balance, duplicate and Q-without-U penalties; swap for
+  a Crossplay-calibrated table later). A **Best-overall / Most-points toggle** lets you
+  pick the ranking; each play shows its leave and equity.
+- ⬜ **Move quality** (next) — blocking/defense heuristics (penalize opening premium lanes
+  for the opponent), then optional Monte-Carlo simulation.
 
 ## Run locally
 
@@ -53,10 +62,12 @@ js/templates-data.js    glyph templates baked from a real screenshot
 js/ui.js                board/tray rendering + cell editor + plays list + overlay
 js/engine/dawg.js       minimized DAWG (build + compact traversal)
 js/engine/movegen.js    move generation + scoring (Appel & Jacobs)
+js/engine/leave.js      rack-leave equity heuristic
 js/engine/worker.js     Web Worker: builds the dictionary, answers solve requests
 assets/words.txt        placeholder dictionary (ENABLE, public domain)
-tools/                  dev utility to regenerate the baked templates
-example.png             sample in-game screenshot used for calibration/tests
+tools/generate-templates.html   dev: regenerate the baked glyph templates
+tools/stress-test.html          dev: run the recognizer over every examples/ screenshot
+examples/                sample in-game screenshots (example0.png used for calibration)
 ```
 
 Open `index.html#solve` to auto-load the sample and immediately solve it.

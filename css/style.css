@@ -214,6 +214,15 @@ header.masthead .tag { color: var(--text-dim); font-size: 0.8rem; }
 .cell.candidate .val { opacity: .8; }
 .cell.candidate.blank .letter { font-style: italic; }
 
+/* ---- segmented toggle ---- */
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; margin-bottom: 10px; }
+.seg-btn {
+  appearance: none; border: 0; background: var(--bg-elev-2); color: var(--text-dim);
+  font: inherit; font-weight: 600; font-size: .85rem; padding: 8px 14px; cursor: pointer;
+}
+.seg-btn + .seg-btn { border-left: 1px solid var(--border); }
+.seg-btn.active { background: var(--accent); color: #fff; }
+
 /* ---- best plays list ---- */
 .plays { list-style: none; margin: 8px 0 0; padding: 0; }
 .plays li {
@@ -226,8 +235,12 @@ header.masthead .tag { color: var(--text-dim); font-size: 0.8rem; }
 .plays .rank { color: var(--text-dim); font-size: .8rem; width: 1.4em; text-align: right; }
 .plays .word { font-weight: 800; letter-spacing: .5px; }
 .plays .meta { color: var(--text-dim); font-size: .8rem; }
-.plays .score { margin-left: auto; font-weight: 800; color: var(--accent-2); font-size: 1.05rem; }
+.plays .scorebox { margin-left: auto; text-align: right; line-height: 1.1; }
+.plays .score { font-weight: 800; color: var(--accent-2); font-size: 1.1rem; }
+.plays .score small { font-weight: 600; color: var(--text-dim); font-size: .68rem; }
+.plays .eq { display: block; color: var(--text-dim); font-size: .72rem; }
 .plays .blanktag { color: var(--warn); font-size: .72rem; }
+.plays .keep { color: var(--text); }
 
 /* ---- preview canvas (debug) ---- */
 .preview { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); display: block; }

@@ -24,16 +24,15 @@ export const PREMIUM_HUES = {
 };
 export const PREMIUM_HUE_TOL = 22;           // max hue distance to accept a premium label
 
-// A pixel is "page background" (pure white app background, outside the board) if
-// every channel is at/above this. Off-white board cells (~#f8f7f6) fall below it.
-export const PAGE_MIN = 250;
-
 // Region layout within a tile cell (fractions), measured from real tiles:
-//   - the big letter sits lower-center-left
-//   - the point value is a small SUPERSCRIPT in the upper-right
-//   - light gridline stripes hug the top & left edges (must be excluded)
-export const LETTER_REGION = { x0: 0.13, y0: 0.40, x1: 0.71, y1: 0.93 };
-export const VALUE_REGION  = { x0: 0.55, y0: 0.06, x1: 0.99, y1: 0.36 };
+//   - the big letter sits lower-center; the point value is a small SUPERSCRIPT
+//     in the upper-right; light gridline stripes hug the top & left edges.
+// The letter is isolated by connected-component analysis (largest central ink
+// blob) rather than a tight crop, so a GENEROUS window is used here — this makes
+// recognition tolerant to a few px of calibration drift, which matters because
+// board size/position varies between screenshots.
+export const LETTER_REGION = { x0: 0.06, y0: 0.24, x1: 0.94, y1: 0.98 };
+export const VALUE_REGION  = { x0: 0.52, y0: 0.04, x1: 0.99, y1: 0.38 };
 
 // Ink extraction: white glyph on blue. ink = how white a pixel is.
 // r channel ~255 for white glyph, ~64 for blue bg.

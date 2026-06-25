@@ -21,6 +21,7 @@ const els = {
   playsCard: $("plays-card"),
   plays: $("plays"),
   playsStatus: $("plays-status"),
+  rankToggle: $("rank-toggle"),
   debugCard: $("debug-card"),
   debugCanvas: $("debug-canvas"),
   editor: $("editor"),
@@ -36,6 +37,8 @@ templates.loadTrained();
 let state = null;       // last recognition result
 let currentImage = null;
 let selectedMove = null;
+let currentRank = "equity";
+let lastLite = null;    // last board sent to the engine (for re-ranking)
 
 // ---- engine worker (builds the dictionary in the background) -------------
 let engineReady = false;
@@ -95,6 +98,7 @@ async function handleImage(img) {
     state = recognize(img, templates);
     const ms = Math.round(performance.now() - t0);
     selectedMove = null;
+    lastLite = null;
     els.playsCard.classList.add("hidden");
     els.boardCard.classList.remove("hidden");
     rerender();
@@ -132,7 +136,7 @@ els.dropzone.addEventListener("drop", (e) => {
 
 els.loadExample.addEventListener("click", () => {
   setStatus("Loading example…");
-  loadFromBlobOrUrl("example.png");
+  loadFromBlobOrUrl("examples/example0.png");
 });
 
 // Convenience for demos/dev: #example auto-loads the sample; #solve also auto-solves.
@@ -161,17 +165,30 @@ els.trainBtn.addEventListener("click", () => {
   setStatus(`Learned ${n} glyphs from your corrected board — future reads will be more accurate.`, "ok");
 });
 
+function postSolve() {
+  if (!lastLite || !engineReady) return;
+  selectedMove = null;
+  els.confirm.disabled = true;
+  els.confirm.textContent = "Solving…";
+  worker.postMessage({ type: "solve", state: lastLite, opts: { rankBy: currentRank }, limit: 40 });
+}
+
 els.confirm.addEventListener("click", () => {
   if (!state) return;
   window.crossplayBoard = state;
   if (!engineReady) { setStatus("Engine still loading the dictionary…", ""); return; }
-  selectedMove = null;
-  els.confirm.disabled = true;
-  els.confirm.textContent = "Solving…";
   // strip the heavy `rect` fields the engine doesn't need before cloning to the worker
-  const lite = {
+  lastLite = {
     board: state.board.map((row) => row.map((c) => ({ type: c.type, letter: c.letter, value: c.value, blank: c.blank, premium: c.premium }))),
     tray: (state.tray || []).map((t) => ({ letter: t.letter, value: t.value, blank: t.blank })),
   };
-  worker.postMessage({ type: "solve", state: lite, limit: 40 });
+  postSolve();
+});
+
+els.rankToggle.addEventListener("click", (e) => {
+  const btn = e.target.closest(".seg-btn");
+  if (!btn || btn.dataset.rank === currentRank) return;
+  currentRank = btn.dataset.rank;
+  [...els.rankToggle.children].forEach((b) => b.classList.toggle("active", b === btn));
+  postSolve();
 });

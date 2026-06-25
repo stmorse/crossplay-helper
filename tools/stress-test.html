@@ -1,0 +1,39 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>recognizer stress test</title>
+<style>body{font:13px/1.4 monospace;background:#0e1116;color:#e6edf3;padding:16px}h2{color:#5b8de0}pre{white-space:pre-wrap}</style>
+</head><body>
+<h1>Recognizer stress test</h1>
+<p>Runs the production recognizer (seed + baked templates) over every screenshot in
+<code>examples/</code> and dumps the detected board, values, and tray for visual comparison.</p>
+<div id="out">running…</div>
+<script type="module">
+import { TemplateSet } from "../js/glyphs.js";
+import { recognize } from "../js/recognizer.js";
+
+const EXAMPLES = ["example0.png", "example1.PNG", "example2.PNG", "example3.PNG"];
+const t = new TemplateSet(); t.buildSeed(); t.loadBaked();
+const out = document.getElementById("out");
+
+function loadImg(src) {
+  return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+}
+function dump(name, r) {
+  let s = `<h2>${name}</h2><pre>`;
+  s += "GEO " + JSON.stringify({ left: r.geo.left, top: r.geo.top, size: r.geo.size, cell: +r.geo.cell.toFixed(1) }) + "\n\n";
+  for (const row of r.board)
+    s += row.map(c => c.type === "tile" ? (c.lowconf ? (c.letter || "?").toLowerCase() : (c.letter || "?")) : c.type === "premium" ? "·" : " ").join(" ") + "\n";
+  let tiles = 0, low = 0, prem = 0;
+  for (const row of r.board) for (const c of row) { if (c.type === "tile") { tiles++; if (c.lowconf) low++; } if (c.type === "premium") prem++; }
+  s += `\n${tiles} tiles (${low} low-conf) · ${prem} premium\n`;
+  s += "TRAY: " + r.tray.map(x => `${x.letter}${x.value == null ? "" : "/" + x.value}${x.lowconf ? "!" : ""}`).join("  ");
+  return s + "</pre>";
+}
+(async () => {
+  let html = "";
+  for (const ex of EXAMPLES) {
+    try { html += dump(ex, recognize(await loadImg("../examples/" + ex), t)); }
+    catch (e) { html += `<h2>${ex}</h2><pre>ERROR: ${e.message}</pre>`; }
+  }
+  out.innerHTML = html;
+  document.title = "DONE";
+})();
+</script></body></html>
