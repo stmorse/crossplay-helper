@@ -179,12 +179,11 @@ export function moveOverlay(m) {
 }
 
 export function summarize(state) {
-  let tiles = 0, low = 0, prem = 0;
-  for (const row of state.board) for (const cell of row) {
-    if (cell.type === "tile") { tiles++; if (cell.lowconf) low++; }
-    if (cell.type === "premium") prem++;
-  }
+  let low = 0;
+  for (const row of state.board) for (const cell of row)
+    if (cell.type === "tile" && cell.lowconf) low++;
   const lowTray = (state.tray || []).filter((t) => t.lowconf).length;
-  return `${tiles} tiles · ${prem} premium squares · ${(state.tray || []).length} tray tiles` +
-    (low + lowTray ? ` · ⚠ ${low + lowTray} low-confidence (highlighted)` : " · all high-confidence");
+  const n = low + lowTray;
+  return n ? `⚠ ${n} low-confidence cell${n > 1 ? "s" : ""} (highlighted)`
+           : "All cells read with high confidence";
 }

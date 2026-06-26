@@ -99,6 +99,9 @@ async function handleImage(img) {
     els.boardCard.classList.remove("hidden");
     rerender();
     setStatus("");
+    // on mobile, bring the freshly-detected board to the top of the window
+    if (window.matchMedia("(max-width: 560px)").matches)
+      els.boardCard.scrollIntoView({ behavior: "smooth", block: "start" });
     maybeAutoSolve();
   } catch (e) {
     console.error(e);

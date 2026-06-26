@@ -126,8 +126,9 @@ header.masthead h1 .mark { color: var(--accent-2); }
 .status {
   font-size: 0.85rem;
   color: var(--text-dim);
-  min-height: 1.2em;
+  margin: 10px 0 0;
 }
+.status:empty { margin: 0; }
 .status.ok  { color: var(--good); }
 .status.err { color: var(--bad); }
 
