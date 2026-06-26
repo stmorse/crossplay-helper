@@ -24,22 +24,30 @@ See [`NOTES.md`](NOTES.md) for the full design rationale and roadmap.
 - ✅ **Correction UI** — tappable board + tray; low-confidence cells are highlighted so
   you can fix any misread.
 - ✅ **Move engine** — runs in a Web Worker, off the main thread:
-  - minimized **DAWG** of ~168k words (Daciuk incremental minimization), ~0.8 MB,
-    built in ~100 ms
+  - minimized **DAWG** of ~196k words (Daciuk incremental minimization), ~0.9 MB,
+    built in ~120 ms
   - **Appel & Jacobs** anchor + cross-check move generation, across + transposed
   - **scoring from the per-tile point values read off the screenshot** (Crossplay's
     values are non-standard, so no hardcoded table) — main word + cross words + bingo
+    (+50, the confirmed Crossplay bonus)
   - finds every legal play on a full board in **single-digit milliseconds**
   - "Find best plays" lists the top plays; tapping one highlights it on the board.
-    Placeholder dictionary is ENABLE (`assets/words.txt`); swap for the real Crossplay
-    list later.
+  - **Dictionary is the real Crossplay lexicon** (`assets/words.txt`, 196,419 words):
+    NWL2023 minus the 182 (mostly trademark) words NYT removed. See
+    [`tools/build-wordlist.sh`](tools/build-wordlist.sh) for how it's derived. NWL2023
+    is NASPA's copyrighted list; it's shipped here for convenience — swap in your own
+    `words.txt` if you'd rather.
 - ✅ **Rack-leave equity** — ranks plays by *equity* = score + the value of the tiles you
   keep, not just raw points (a transparent heuristic placeholder in `js/engine/leave.js`:
   blank/S bonuses, vowel-consonant balance, duplicate and Q-without-U penalties; swap for
   a Crossplay-calibrated table later). A **Best-overall / Most-points toggle** lets you
   pick the ranking; each play shows its leave and equity.
-- ⬜ **Move quality** (next) — blocking/defense heuristics (penalize opening premium lanes
-  for the opponent), then optional Monte-Carlo simulation.
+- ✅ **Defensive/blocking heuristic** (`js/engine/defense.js`) — equity also *subtracts* a
+  static danger penalty for premium squares a play newly opens for the opponent (a high
+  tile left beside an empty 3W is a gift). Plays that hand over a premium show a red
+  "⚠ opens 3W" note and drop in the ranking. Weights are a rough first pass, easy to tune.
+- ⬜ **Move quality** (next, optional) — Monte-Carlo "deep analysis": simulate opponent
+  replies to score the top candidates empirically (augments the static blocking above).
 
 ## Run locally
 
@@ -64,8 +72,10 @@ js/ui.js                board/tray rendering + cell editor + plays list + overla
 js/engine/dawg.js       minimized DAWG (build + compact traversal)
 js/engine/movegen.js    move generation + scoring (Appel & Jacobs)
 js/engine/leave.js      rack-leave equity heuristic
+js/engine/defense.js    defensive/blocking penalty (premiums opened for the opponent)
 js/engine/worker.js     Web Worker: builds the dictionary, answers solve requests
-assets/words.txt        placeholder dictionary (ENABLE, public domain)
+assets/words.txt        Crossplay lexicon (NWL2023 minus NYT's 182 removed words)
+tools/build-wordlist.sh         dev: regenerate assets/words.txt from NWL2023
 tools/generate-templates.html   dev: regenerate the baked glyph templates
 tools/stress-test.html          dev: run the recognizer over every examples/ screenshot
 examples/                sample in-game screenshots (example0.png used for calibration)

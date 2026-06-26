@@ -158,7 +158,8 @@ export function renderMoves(moves, el, onSelect) {
       `<span class="rank">${i + 1}</span>` +
       `<span class="word">${m.word}</span>` +
       `<span class="meta">${squareLabel(m)} · ${keep}` +
-      (blanks ? ` · <span class="blanktag">${blanks} blank</span>` : "") + `</span>` +
+      (blanks ? ` · <span class="blanktag">${blanks} blank</span>` : "") +
+      (m.risk ? ` · <span class="risk">⚠ opens ${m.risk}</span>` : "") + `</span>` +
       `<span class="scorebox"><span class="score">${m.score}<small> pts</small></span>` +
       (m.equity != null ? `<span class="eq">eq ${m.equity}</span>` : "") + `</span>`;
     li.addEventListener("click", () => {

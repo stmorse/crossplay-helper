@@ -253,6 +253,7 @@ header.masthead h1 .mark { color: var(--accent-2); }
 .plays .score small { font-weight: 600; color: var(--text-dim); font-size: .68rem; }
 .plays .eq { display: block; color: var(--text-dim); font-size: .72rem; }
 .plays .blanktag { color: var(--warn); font-size: .72rem; }
+.plays .risk { color: var(--bad); font-size: .72rem; }
 .plays .keep { color: var(--text); }
 
 /* ---- preview canvas (debug) ---- */

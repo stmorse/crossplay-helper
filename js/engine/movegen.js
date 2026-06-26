@@ -14,9 +14,10 @@
 
 import { code, letter as toLetter } from "./dawg.js";
 import { leaveValue, leaveString } from "./leave.js";
+import { dangerValue, riskLabel } from "./defense.js";
 
 const ALL = (1 << 26) - 1;
-export const BINGO_BONUS = 50;      // placeholder; calibrate to Crossplay later
+export const BINGO_BONUS = 50;      // confirmed: Crossplay awards +50 for using all 7 tiles
 
 // ---- build engine board from recognizer state ---------------------------
 
@@ -84,7 +85,7 @@ export function generateMoves(eb, dawg, opts = {}) {
     if (!prev || m.score > prev.score) seen.set(key, m);
   }
 
-  // rack-leave equity: score + value of the tiles kept after the play
+  // equity = score + value of the tiles kept (leave) − danger we hand the opponent
   const out = [...seen.values()];
   for (const m of out) {
     const leaveCount = eb.rackCount.slice();
@@ -92,7 +93,12 @@ export function generateMoves(eb, dawg, opts = {}) {
     for (const t of m.tiles) { if (t.blank) leaveBlanks--; else leaveCount[code(t.letter)]--; }
     m.leaveValue = Math.round(leaveValue(leaveCount, leaveBlanks, opts.leaveConfig) * 10) / 10;
     m.leave = leaveString(leaveCount, leaveBlanks);
-    m.equity = Math.round((m.score + m.leaveValue) * 10) / 10;
+
+    const dg = dangerValue(eb, m.tiles, opts.defenseConfig);
+    m.danger = Math.round(dg.value * 10) / 10;
+    m.risk = riskLabel(dg.opened);
+
+    m.equity = Math.round((m.score + m.leaveValue - m.danger) * 10) / 10;
   }
 
   const rankBy = opts.rankBy === "score" ? (a, b) => b.score - a.score
