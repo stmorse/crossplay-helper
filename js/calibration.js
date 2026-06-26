@@ -14,15 +14,34 @@ export const TILE_FILL_MIN = 0.22;          // min fraction of blue pixels in a 
 export const SAT_MIN = 28;                   // max(rgb)-min(rgb) >= this
 export const SAT_MAX_BRIGHT = 252;           // and max(rgb) < this (excludes pure white page)
 
-// Premium-label hue prototypes (measured from real empty premium squares).
-// Classified by nearest hue among these.
-export const PREMIUM_HUES = {
-  "3L": 79,    // yellow-green
-  "2L": 47,    // tan / gold
-  "3W": 295,   // purple / magenta
-  "2W": 221,   // muted blue
-};
-export const PREMIUM_HUE_TOL = 22;           // max hue distance to accept a premium label
+// Crossplay's premium-square layout is FIXED in every game, so we treat this map
+// as the source of truth for premiums (looked up by grid position) rather than
+// classifying each square by color — adjacent label hues (2L tan ≈ 47°, 3L green
+// ≈ 79°) are close enough that color detection occasionally misreads, putting
+// premiums in "wonky" spots. The layout was verified from real boards: it is NOT
+// the Scrabble layout (corners are 3L, not triple-word; the center is just a start
+// logo with no multiplier). Legend: '.' none · d=2L · t=3L · D=2W · T=3W.
+const PREMIUM_ROWS = [
+  "t..T...d...T..t",
+  ".D....t.t....D.",
+  "....d.....d....",
+  "T..d...D...d..T",
+  "..d..t...t..d..",
+  "....t..d..t....",
+  ".t...........t.",
+  "d..D.d...d.D..d",
+  ".t...........t.",
+  "....t..d..t....",
+  "..d..t...t..d..",
+  "T..d...D...d..T",
+  "....d.....d....",
+  ".D....t.t....D.",
+  "t..T...d...T..t",
+];
+const PREMIUM_CHARS = { d: "2L", t: "3L", D: "2W", T: "3W" };
+// 15×15 array of premium label ("3L"/"2L"/"3W"/"2W") or null.
+export const PREMIUM_LAYOUT = PREMIUM_ROWS.map((row) =>
+  [...row].map((ch) => PREMIUM_CHARS[ch] || null));
 
 // Crossplay's letter→value mapping is FIXED, so we look the value up from the
 // (reliably OCR'd) letter rather than trusting the tiny value-superscript OCR,

@@ -30,16 +30,6 @@ function isSaturated(r, g, b) {
   const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
   return mx - mn >= C.SAT_MIN && mx < C.SAT_MAX_BRIGHT;
 }
-function hue(r, g, b) {
-  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
-  if (d === 0) return 0;
-  let h;
-  if (mx === r) h = ((g - b) / d) % 6;
-  else if (mx === g) h = (b - r) / d + 2;
-  else h = (r - g) / d + 4;
-  h *= 60; if (h < 0) h += 360;
-  return h;
-}
 
 // ---- calibration ---------------------------------------------------------
 
@@ -145,41 +135,22 @@ function frac(rect, fr) {
   };
 }
 
-// Classify a cell as tile / premium / empty.
-function classifyCell(px, w, rect) {
+// Is this cell covered by a tile? (Premium squares aren't classified by color —
+// their type comes from the fixed C.PREMIUM_LAYOUT, looked up by grid position.)
+function isTileCell(px, w, rect) {
   // sample inner region to avoid neighbor bleed
   const inset = 0.12;
   const x0 = Math.round(rect.x + rect.w * inset), x1 = Math.round(rect.x + rect.w * (1 - inset));
   const y0 = Math.round(rect.y + rect.h * inset), y1 = Math.round(rect.y + rect.h * (1 - inset));
-  let blue = 0, n = 0, sat = 0, hx = 0, hy = 0;
+  let blue = 0, n = 0;
   for (let y = y0; y < y1; y += 2) {
     for (let x = x0; x < x1; x += 2) {
-      const i = (y * w + x) * 4, r = px[i], g = px[i + 1], b = px[i + 2];
+      const i = (y * w + x) * 4;
       n++;
-      if (isTileBlue(r, g, b)) { blue++; continue; }
-      if (isSaturated(r, g, b)) {
-        sat++;
-        const a = (hue(r, g, b) * Math.PI) / 180;
-        hx += Math.cos(a); hy += Math.sin(a);
-      }
+      if (isTileBlue(px[i], px[i + 1], px[i + 2])) blue++;
     }
   }
-  if (blue / n >= C.TILE_FILL_MIN) return { type: "tile" };
-  if (sat >= 8) {
-    let deg = (Math.atan2(hy, hx) * 180) / Math.PI; if (deg < 0) deg += 360;
-    const premium = nearestPremium(deg);
-    if (premium) return { type: "premium", premium };
-  }
-  return { type: "empty" };
-}
-
-function nearestPremium(deg) {
-  let best = null, bestD = 1e9;
-  for (const [label, h] of Object.entries(C.PREMIUM_HUES)) {
-    let d = Math.abs(deg - h); d = Math.min(d, 360 - d);
-    if (d < bestD) { bestD = d; best = label; }
-  }
-  return bestD <= C.PREMIUM_HUE_TOL ? best : null;
+  return blue / n >= C.TILE_FILL_MIN;
 }
 
 // ---- OCR -----------------------------------------------------------------
@@ -365,8 +336,7 @@ export function recognizeImageData(img, templates) {
     const row = [];
     for (let c = 0; c < C.GRID; c++) {
       const rect = cellRect(geo, r, c);
-      const cls = classifyCell(px, img.w, rect);
-      if (cls.type === "tile") {
+      if (isTileCell(px, img.w, rect)) {
         const L = ocrLetter(px, img.w, rect, templates);
         const V = resolveValue(L.letter, ocrValue(px, img.w, rect, templates));
         row.push({
@@ -375,10 +345,10 @@ export function recognizeImageData(img, templates) {
           lowconf: L.score < C.LETTER_MIN_SCORE || L.margin < C.LETTER_MIN_MARGIN,
           conf: { letter: L.score },
         });
-      } else if (cls.type === "premium") {
-        row.push({ type: "premium", premium: cls.premium, rect });
       } else {
-        row.push({ type: "empty", rect });
+        // uncovered square: premium type (if any) comes from the fixed layout
+        const premium = C.PREMIUM_LAYOUT[r][c];
+        row.push(premium ? { type: "premium", premium, rect } : { type: "empty", rect });
       }
     }
     board.push(row);

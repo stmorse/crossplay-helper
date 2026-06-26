@@ -1,10 +1,9 @@
-# crossplay-helper
+# Crossplay Helper
 
-A lightweight, mobile-first, **fully client-side** web app that reads a screenshot of an
-NYT Crossplay game and reconstructs the board + tray state, as the first step toward
-finding optimal plays. Designed to be hosted on GitHub Pages — no backend, no build step.
+Crossplay Helper is a lightweight, mobile-first, **fully client-side** web app that reads a screenshot of an
+NYT Crossplay game, reconstructs the board + tray state, then recommends optimal plays taking the entire board into account. 
+Designed to be hosted on GitHub Pages with no backend or build step.
 
-See [`NOTES.md`](NOTES.md) for the full design rationale and roadmap.
 
 ## Status
 
@@ -12,7 +11,10 @@ See [`NOTES.md`](NOTES.md) for the full design rationale and roadmap.
   - auto-calibrates board geometry robustly across screenshots — board size/position
     and page tint vary, so it locates the board by a gap-merged band of *colored*
     (saturation-based) pixels and sizes the square from the reliable vertical extent
-  - classifies every cell as tile / empty / premium (`3L`/`2L`/`3W`/`2W`, by color)
+  - classifies each cell as tile-covered or not by color; premium squares
+    (`3L`/`2L`/`3W`/`2W`) come from Crossplay's fixed board layout
+    (`PREMIUM_LAYOUT`), the source of truth — not per-square color (which confused
+    adjacent hues), exactly like the fixed letter→value table
   - OCRs each tile's letter (largest connected ink blob → tolerant to a few px of
     drift) via template matching against a glyph set baked from a real screenshot
     (Crossplay uses a fixed digital font); the point value comes from a fixed
@@ -46,7 +48,7 @@ See [`NOTES.md`](NOTES.md) for the full design rationale and roadmap.
   static danger penalty for premium squares a play newly opens for the opponent (a high
   tile left beside an empty 3W is a gift). Plays that hand over a premium show a red
   "⚠ opens 3W" note and drop in the ranking. Weights are a rough first pass, easy to tune.
-- ⬜ **Move quality** (next, optional) — Monte-Carlo "deep analysis": simulate opponent
+- ⬜ **Move quality** (in progress) — Monte-Carlo "deep analysis": simulate opponent
   replies to score the top candidates empirically (augments the static blocking above).
 
 ## Run locally
@@ -83,4 +85,3 @@ tools/stress-test.html          dev: run the recognizer over every examples/ scr
 examples/                sample in-game screenshots (example0.png used for calibration)
 ```
 
-Open `index.html#solve` to auto-load the sample and immediately solve it.
