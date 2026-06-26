@@ -75,7 +75,9 @@ js/engine/leave.js      rack-leave equity heuristic
 js/engine/defense.js    defensive/blocking penalty (premiums opened for the opponent)
 js/engine/worker.js     Web Worker: builds the dictionary, answers solve requests
 assets/words.txt        Crossplay lexicon (NWL2023 minus NYT's 182 removed words)
+og-image.png            social/iMessage link-preview image (1200x630, Open Graph)
 tools/build-wordlist.sh         dev: regenerate assets/words.txt from NWL2023
+tools/og-image.html             dev: source for og-image.png (render at 1200x630)
 tools/generate-templates.html   dev: regenerate the baked glyph templates
 tools/stress-test.html          dev: run the recognizer over every examples/ screenshot
 examples/                sample in-game screenshots (example0.png used for calibration)
