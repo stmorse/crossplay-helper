@@ -387,23 +387,3 @@ export function recognizeImageData(img, templates) {
   const tray = detectTray(px, img.w, img.h, geo, templates);
   return { board, tray, geo, img: { w: img.w, h: img.h } };
 }
-
-// Capture exact glyph templates from a corrected board (the same screenshot the
-// user just fixed). Letters always; values only when a single digit (0–9) so we
-// feed one glyph per template. Makes recognition self-improving over time.
-export function trainFromState(image, state, templates) {
-  const px = imageData(image).data.data;
-  const w = state.img.w;
-  let trained = 0;
-  const learn = (t) => {
-    if (!t.rect || !t.letter || t.letter === "?") return;
-    templates.train("letter", t.letter, extractLetterInk(px, w, t.rect));
-    if (t.value != null && t.value >= 0 && t.value <= 9)
-      templates.train("digit", String(t.value), extractValueInk(px, w, t.rect));
-    trained++;
-  };
-  for (const row of state.board) for (const cell of row) if (cell.type === "tile") learn(cell);
-  for (const t of state.tray || []) learn(t);
-  templates.persist();
-  return trained;
-}

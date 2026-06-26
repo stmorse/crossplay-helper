@@ -57,18 +57,12 @@ export function renderTray(state, el, onEdit) {
     d.addEventListener("click", () => onEdit({ kind: "tray", i }));
     el.appendChild(d);
   });
-  // allow adding a tray tile
-  const add = document.createElement("div");
-  add.className = "tile empty"; add.textContent = "+";
-  add.addEventListener("click", () => onEdit({ kind: "tray", i: (state.tray || []).length, add: true }));
-  el.appendChild(add);
 }
 
 export function openEditor(target, state, editorEl, rerender) {
   const isTray = target.kind === "tray";
   let cell;
   if (isTray) {
-    if (target.add) { state.tray = state.tray || []; state.tray.push({ letter: "A", value: null, blank: false }); target.i = state.tray.length - 1; }
     cell = state.tray[target.i];
   } else {
     cell = state.board[target.r][target.c];
@@ -181,29 +175,6 @@ export function moveOverlay(m) {
   const map = new Map();
   if (m) for (const t of m.tiles) map.set(t.row + "," + t.col, { letter: t.letter, blank: t.blank, value: t.value });
   return map;
-}
-
-// Draw the detection overlay onto a canvas for debugging.
-export function drawDebug(canvas, image, state) {
-  const { geo } = state;
-  canvas.width = state.img.w; canvas.height = state.img.h;
-  const g = canvas.getContext("2d");
-  g.drawImage(image, 0, 0);
-  g.lineWidth = 2;
-  for (let r = 0; r < geo.grid; r++) {
-    for (let c = 0; c < geo.grid; c++) {
-      const cell = state.board[r][c];
-      const x = geo.left + c * geo.cell, y = geo.top + r * geo.cell;
-      if (cell.type === "tile") g.strokeStyle = "rgba(63,185,80,.9)";
-      else if (cell.type === "premium") g.strokeStyle = "rgba(210,153,34,.9)";
-      else g.strokeStyle = "rgba(255,255,255,.12)";
-      g.strokeRect(x + 1, y + 1, geo.cell - 2, geo.cell - 2);
-    }
-  }
-  (state.tray || []).forEach((t) => {
-    g.strokeStyle = "rgba(91,141,224,.95)";
-    g.strokeRect(t.rect.x, t.rect.y, t.rect.w, t.rect.h);
-  });
 }
 
 export function summarize(state) {

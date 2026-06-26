@@ -22,8 +22,7 @@ See [`NOTES.md`](NOTES.md) for the full design rationale and roadmap.
   - verified on four different boards (`examples/`): full, mid-game, and near-empty —
     all letters / values / trays correct, including blanks
 - ✅ **Correction UI** — tappable board + tray; low-confidence cells are highlighted so
-  you can fix any misread. "Improve accuracy" learns the font from your corrections
-  (stored in `localStorage`) for even better future reads.
+  you can fix any misread.
 - ✅ **Move engine** — runs in a Web Worker, off the main thread:
   - minimized **DAWG** of ~168k words (Daciuk incremental minimization), ~0.8 MB,
     built in ~100 ms

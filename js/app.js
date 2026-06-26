@@ -1,7 +1,7 @@
 // app.js — entry point. Upload → recognize → correction UI.
 
 import { TemplateSet } from "./glyphs.js";
-import { recognize, trainFromState } from "./recognizer.js";
+import { recognize } from "./recognizer.js";
 import * as UI from "./ui.js";
 
 const $ = (id) => document.getElementById(id);
@@ -15,16 +15,15 @@ const els = {
   board: $("board"),
   tray: $("tray"),
   recogSummary: $("recog-summary"),
-  toggleDebug: $("toggle-debug"),
-  trainBtn: $("train-btn"),
   confirm: $("confirm-board"),
   playsCard: $("plays-card"),
   plays: $("plays"),
   playsStatus: $("plays-status"),
   rankToggle: $("rank-toggle"),
-  debugCard: $("debug-card"),
-  debugCanvas: $("debug-canvas"),
   editor: $("editor"),
+  help: $("help"),
+  helpBtn: $("help-btn"),
+  helpClose: $("help-close"),
 };
 
 // Build template set once. Priority: user-trained (localStorage) > baked (from a
@@ -80,7 +79,6 @@ function rerender() {
   UI.renderBoard(state, els.board, onEdit, UI.moveOverlay(selectedMove));
   UI.renderTray(state, els.tray, onEdit);
   els.recogSummary.textContent = UI.summarize(state);
-  if (!els.debugCard.classList.contains("hidden")) UI.drawDebug(els.debugCanvas, currentImage, state);
 }
 
 function onEdit(target) {
@@ -94,15 +92,13 @@ async function handleImage(img) {
   // let the status paint before the (synchronous) heavy work
   await new Promise((r) => requestAnimationFrame(r));
   try {
-    const t0 = performance.now();
     state = recognize(img, templates);
-    const ms = Math.round(performance.now() - t0);
     selectedMove = null;
     lastLite = null;
     els.playsCard.classList.add("hidden");
     els.boardCard.classList.remove("hidden");
     rerender();
-    setStatus(`Recognized in ${ms} ms. Fix any highlighted cells, then find plays.`, "ok");
+    setStatus("");
     maybeAutoSolve();
   } catch (e) {
     console.error(e);
@@ -153,17 +149,12 @@ function maybeAutoSolve() {
 const _onmsg = worker.onmessage;
 worker.onmessage = (ev) => { _onmsg(ev); maybeAutoSolve(); };
 
-els.toggleDebug.addEventListener("click", () => {
-  const hidden = els.debugCard.classList.toggle("hidden");
-  els.toggleDebug.textContent = hidden ? "Show detection overlay" : "Hide detection overlay";
-  if (!hidden && state) UI.drawDebug(els.debugCanvas, currentImage, state);
-});
-
-els.trainBtn.addEventListener("click", () => {
-  if (!state || !currentImage) return;
-  const n = trainFromState(currentImage, state, templates);
-  setStatus(`Learned ${n} glyphs from your corrected board — future reads will be more accurate.`, "ok");
-});
+// "how it works" modal
+const showHelp = (show) => els.help.classList.toggle("hidden", !show);
+els.helpBtn.addEventListener("click", () => showHelp(true));
+els.helpClose.addEventListener("click", () => showHelp(false));
+els.help.addEventListener("click", (e) => { if (e.target === els.help) showHelp(false); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") showHelp(false); });
 
 function postSolve() {
   if (!lastLite || !engineReady) return;

@@ -45,7 +45,7 @@ html, body {
 
 header.masthead {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 16px;
@@ -56,7 +56,20 @@ header.masthead h1 {
   margin: 0;
 }
 header.masthead h1 .mark { color: var(--accent-2); }
-header.masthead .tag { color: var(--text-dim); font-size: 0.8rem; }
+.help-btn {
+  flex: none;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-elev-2);
+  color: var(--text-dim);
+  font: inherit; font-weight: 700; font-size: 1rem;
+  line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color .15s, color .15s;
+}
+.help-btn:hover { border-color: var(--accent); color: var(--text); }
+.help-btn:active { transform: translateY(1px); }
 
 /* ---- cards / sections ---- */
 .card {
@@ -171,14 +184,14 @@ header.masthead .tag { color: var(--text-dim); font-size: 0.8rem; }
   margin-top: 4px;
 }
 .tray .tile {
-  width: 44px; height: 44px;
+  width: 36px; height: 36px;
   background: var(--tile-bg); color: var(--tile-text);
-  border-radius: 8px;
+  border-radius: 7px;
   display: flex; align-items: center; justify-content: center;
-  font-weight: 800; font-size: 1.1rem;
+  font-weight: 800; font-size: .95rem;
   position: relative; cursor: pointer;
 }
-.tray .tile .val { position: absolute; right: 3px; bottom: 1px; font-size: .6rem; font-weight: 600; }
+.tray .tile .val { position: absolute; right: 2px; bottom: 0; font-size: .55rem; font-weight: 600; }
 .tray .tile.empty { background: var(--bg-elev-2); border: 1px dashed var(--border); color: var(--text-dim); }
 .tray .tile.lowconf { box-shadow: 0 0 0 2px var(--warn); }
 
@@ -247,3 +260,37 @@ header.masthead .tag { color: var(--text-dim); font-size: 0.8rem; }
 .muted { color: var(--text-dim); font-size: .8rem; }
 
 footer { text-align: center; color: var(--text-dim); font-size: .75rem; margin-top: 24px; }
+footer a { color: var(--accent-2); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+
+/* ---- "how it works" modal ---- */
+.modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.55);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px; z-index: 60;
+}
+.modal-sheet {
+  position: relative;
+  width: 100%; max-width: 420px;
+  max-height: 85vh; overflow-y: auto;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.5);
+}
+.modal-sheet h3 { margin: 0 0 12px; font-size: 1.05rem; }
+.modal-sheet p { margin: 0 0 12px; font-size: .9rem; }
+.modal-sheet em { color: var(--text); font-style: normal; font-weight: 600; }
+.modal-x {
+  position: absolute; top: 10px; right: 12px;
+  width: 30px; height: 30px;
+  border: 0; background: transparent;
+  color: var(--text-dim); font-size: 1.5rem; line-height: 1;
+  cursor: pointer; border-radius: 8px;
+}
+.modal-x:hover { color: var(--text); background: var(--bg-elev-2); }
+.help-steps { margin: 0 0 12px; padding-left: 20px; font-size: .9rem; }
+.help-steps li { margin-bottom: 8px; }
+.help-steps strong { color: var(--accent-2); }

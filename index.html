@@ -12,12 +12,12 @@
   <div class="app">
     <header class="masthead">
       <h1><span class="mark">▦</span> Crossplay <span class="mark">Helper</span></h1>
-      <span class="tag">board reader</span>
+      <button class="help-btn" id="help-btn" aria-label="How this works" title="How this works">?</button>
     </header>
 
     <!-- 1. Upload -->
     <section class="card" id="upload-card">
-      <h2>Screenshot</h2>
+      <h2>Load a board</h2>
       <div class="dropzone" id="dropzone">
         <p>Tap to choose a screenshot<br /><span class="muted">or drag &amp; drop a Crossplay screen</span></p>
       </div>
@@ -30,7 +30,7 @@
 
     <!-- 2. Detected board (correction UI) -->
     <section class="card hidden" id="board-card">
-      <h2>Detected board — tap any cell to fix</h2>
+      <h2>Tap any cell to fix</h2>
       <div class="board-wrap">
         <div class="board" id="board"></div>
       </div>
@@ -39,8 +39,6 @@
         <div class="tray" id="tray"></div>
       </div>
       <div class="btn-row" style="margin-top:16px">
-        <button class="btn" id="toggle-debug">Show detection overlay</button>
-        <button class="btn ghost" id="train-btn" title="Teach the reader this font from your corrected board">Improve accuracy</button>
         <button class="btn primary" id="confirm-board" disabled>Find best plays</button>
       </div>
       <p class="muted" id="recog-summary"></p>
@@ -58,18 +56,32 @@
       <p class="muted">“Best overall” = points + value of the tiles you keep (rack leave).</p>
     </section>
 
-    <!-- 4. Debug preview -->
-    <section class="card hidden" id="debug-card">
-      <h2>Detection overlay</h2>
-      <canvas class="preview" id="debug-canvas"></canvas>
-      <p class="muted">Green = detected tile · yellow = premium · grid = calibrated cells</p>
-    </section>
-
-    <footer>Static client-side prototype · runs entirely in your browser</footer>
+    <footer>
+      <a href="https://github.com/stmorse/crossplay-helper" target="_blank" rel="noopener">GitHub repo</a>
+      · © 2026
+    </footer>
   </div>
 
   <!-- cell editor popover, injected/shown on demand -->
   <div class="editor hidden" id="editor"></div>
+
+  <!-- "how it works" help modal -->
+  <div class="modal hidden" id="help">
+    <div class="modal-sheet">
+      <button class="modal-x" id="help-close" aria-label="Close">×</button>
+      <h3>How this works</h3>
+      <p>Stuck staring at your rack? Drop in a screenshot of your Crossplay game and
+        we'll read the board and tray, then hand you the best plays — ranked by points
+        <em>and</em> by what's smart to keep.</p>
+      <ol class="help-steps">
+        <li><strong>Load a board</strong> — upload a screenshot (or tap <em>Load example</em> to kick the tires).</li>
+        <li><strong>Check the read</strong> — we guess the tiles; tap any cell that's off to fix it.</li>
+        <li><strong>Find best plays</strong> — tap a play to watch it light up on the board.</li>
+      </ol>
+      <p class="muted">It all runs right here in your browser — nothing leaves your phone.
+        Not affiliated with the NYT; just a friendly helper.</p>
+    </div>
+  </div>
 
   <script type="module" src="js/app.js"></script>
 </body>
