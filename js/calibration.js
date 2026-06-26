@@ -24,6 +24,17 @@ export const PREMIUM_HUES = {
 };
 export const PREMIUM_HUE_TOL = 22;           // max hue distance to accept a premium label
 
+// Crossplay's letter→value mapping is FIXED, so we look the value up from the
+// (reliably OCR'd) letter rather than trusting the tiny value-superscript OCR,
+// which often misreads (e.g. M3→M8, W5→W95). Values read directly off real
+// screenshots; several differ from standard Scrabble (B/G/K/L/U/V/W bumped up).
+// The one exception is a BLANK: it shows as a letter with value 0 — detected via
+// the superscript actually reading "0".
+export const LETTER_VALUES = {
+  A: 1, B: 4, C: 3, D: 2, E: 1, F: 4, G: 4, H: 3, I: 1, J: 8, K: 6, L: 2, M: 3,
+  N: 1, O: 1, P: 3, Q: 10, R: 1, S: 1, T: 1, U: 2, V: 6, W: 5, X: 8, Y: 4, Z: 10,
+};
+
 // Region layout within a tile cell (fractions), measured from real tiles:
 //   - the big letter sits lower-center; the point value is a small SUPERSCRIPT
 //     in the upper-right; light gridline stripes hug the top & left edges.

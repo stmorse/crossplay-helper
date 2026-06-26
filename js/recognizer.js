@@ -279,6 +279,16 @@ function ocrValue(px, w, rect, templates) {
   return { value: Number.isNaN(value) ? null : value, score: minScore };
 }
 
+// Resolve a tile's point value. Crossplay values are fixed, so we take the value
+// from the letter via LETTER_VALUES and use the (unreliable) superscript OCR only
+// to detect a blank — a letter whose superscript reads 0. Falls back to the OCR'd
+// value for letters not in the table (e.g. an uncommon glyph the OCR guessed).
+function resolveValue(letter, ocr) {
+  if (ocr.value === 0) return { value: 0, blank: true };
+  const std = C.LETTER_VALUES[letter];
+  return { value: std != null ? std : ocr.value, blank: false };
+}
+
 // ---- tray ----------------------------------------------------------------
 
 function detectTray(px, w, h, geo, templates) {
@@ -328,9 +338,9 @@ function detectTray(px, w, h, geo, templates) {
   for (const [a, b] of segs.slice(0, 7)) {
     const rect = { x: a, y: band.top, w: b - a, h: band.bottom - band.top };
     const L = ocrLetter(px, w, rect, templates);
-    const V = ocrValue(px, w, rect, templates);
+    const V = resolveValue(L.letter, ocrValue(px, w, rect, templates));
     tiles.push({
-      letter: L.letter, value: V.value, blank: V.value === 0,
+      letter: L.letter, value: V.value, blank: V.blank,
       rect,
       lowconf: L.score < C.LETTER_MIN_SCORE || L.margin < C.LETTER_MIN_MARGIN,
     });
@@ -358,12 +368,12 @@ export function recognizeImageData(img, templates) {
       const cls = classifyCell(px, img.w, rect);
       if (cls.type === "tile") {
         const L = ocrLetter(px, img.w, rect, templates);
-        const V = ocrValue(px, img.w, rect, templates);
+        const V = resolveValue(L.letter, ocrValue(px, img.w, rect, templates));
         row.push({
-          type: "tile", letter: L.letter, value: V.value, blank: V.value === 0,
+          type: "tile", letter: L.letter, value: V.value, blank: V.blank,
           rect,
           lowconf: L.score < C.LETTER_MIN_SCORE || L.margin < C.LETTER_MIN_MARGIN,
-          conf: { letter: L.score, margin: L.margin, value: V.score },
+          conf: { letter: L.score },
         });
       } else if (cls.type === "premium") {
         row.push({ type: "premium", premium: cls.premium, rect });

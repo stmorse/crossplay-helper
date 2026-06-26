@@ -20,10 +20,14 @@ function dump(name, r) {
   let s = `<h2>${name}</h2><pre>`;
   s += "GEO " + JSON.stringify({ left: r.geo.left, top: r.geo.top, size: r.geo.size, cell: +r.geo.cell.toFixed(1) }) + "\n\n";
   for (const row of r.board)
-    s += row.map(c => c.type === "tile" ? (c.lowconf ? (c.letter || "?").toLowerCase() : (c.letter || "?")) : c.type === "premium" ? "·" : " ").join(" ") + "\n";
-  let tiles = 0, low = 0, prem = 0;
+    s += row.map(c => c.type === "tile" ? (c.blank ? "*" : c.lowconf ? (c.letter || "?").toLowerCase() : (c.letter || "?")) : c.type === "premium" ? "·" : " ").join(" ") + "\n";
+  s += "\nVALUES (blank = 0):\n";
+  for (const row of r.board)
+    s += row.map(c => c.type === "tile" ? String(c.value == null ? "?" : c.value).padStart(2) : " .").join("") + "\n";
+  let tiles = 0, low = 0, prem = 0, blanks = 0;
+  for (const row of r.board) for (const c of row) if (c.type === "tile" && c.blank) blanks++;
   for (const row of r.board) for (const c of row) { if (c.type === "tile") { tiles++; if (c.lowconf) low++; } if (c.type === "premium") prem++; }
-  s += `\n${tiles} tiles (${low} low-conf) · ${prem} premium\n`;
+  s += `\n${tiles} tiles (${low} low-conf, ${blanks} blank) · ${prem} premium\n`;
   s += "TRAY: " + r.tray.map(x => `${x.letter}${x.value == null ? "" : "/" + x.value}${x.lowconf ? "!" : ""}`).join("  ");
   return s + "</pre>";
 }

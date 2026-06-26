@@ -14,8 +14,10 @@ See [`NOTES.md`](NOTES.md) for the full design rationale and roadmap.
     (saturation-based) pixels and sizes the square from the reliable vertical extent
   - classifies every cell as tile / empty / premium (`3L`/`2L`/`3W`/`2W`, by color)
   - OCRs each tile's letter (largest connected ink blob → tolerant to a few px of
-    drift) **and** point value, via template matching against a glyph set baked from a
-    real screenshot (Crossplay uses a fixed digital font); detects blanks (value 0)
+    drift) via template matching against a glyph set baked from a real screenshot
+    (Crossplay uses a fixed digital font); the point value comes from a fixed
+    letter→value table (`LETTER_VALUES`), since the tiny value superscript OCRs
+    unreliably — the superscript is read only to detect blanks (a letter showing 0)
   - detects the tray tiles
   - verified on four different boards (`examples/`): full, mid-game, and near-empty —
     all letters / values / trays correct, including blanks
